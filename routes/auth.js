@@ -3,6 +3,7 @@ import { getDB } from "../db/index.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
+const jwtSecret = process.env.JWT_SECRET;
 const router = Router();
 
 router.post("/register", async (req, res) => {
@@ -10,7 +11,6 @@ router.post("/register", async (req, res) => {
     const db = getDB();
     const { username, email, password } = req.body;
     const existingUser = await db.collection("users").findOne({ email });
-    const jwtSecret = process.env.JWT_SECRET;
 
     if (!username || !email) {
       return res.status(400).json({ message: "Name and email are required!" });
@@ -42,8 +42,52 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", (req, res) => {
-  res.send("User login in!");
+router.post("/login", async (req, res) => {
+  try {
+    const db = getDB();
+    const { email, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required!" });
+    }
+    if (!password) {
+      return res.status(400).json({ message: "Password is required!" });
+    }
+
+    const user = await db.collection("users").findOne({ email });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Password or email is incorrect" });
+    }
+
+    const isTruePassword = await bcrypt.compare(password, user.password);
+
+    if (!isTruePassword) {
+      return res
+        .status(400)
+        .json({ message: "Password or email is incorrect" });
+    }
+
+    const userData = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+    };
+
+    const token = jwt.sign(userData, jwtSecret, {
+      expiresIn: "3h",
+    });
+
+    res.status(200).json({ message: "User is login!", userData, token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Faild login user!",
+      error: error,
+    });
+  }
 });
 
 export default router;
