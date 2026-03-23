@@ -8,6 +8,8 @@ configDotenv();
 
 const app = express();
 
+app.use(express.json());
+
 const HOST = process.env.HOST || "localhost";
 
 const PORT = process.env.PORT || 3333;
@@ -21,8 +23,6 @@ connectDB()
   .catch((error) => {
     console.error("Failed connected to MongoDB & start server", error);
   });
-
-app.use(express.json());
 
 app.use("/auth", authRouter);
 app.use("/posts", postsRouter);
