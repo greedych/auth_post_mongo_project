@@ -4,8 +4,14 @@ import { getDB } from "../db/index.js";
 
 const router = Router();
 
-router.get("/get", (req, res) => {
-  res.send("Geted all posts");
+router.get("/get", async (req, res) => {
+  try {
+    const db = getDB();
+    const posts = await db.collection("posts").find().toArray();
+    res.status(200).json({ message: "Fetched all posts", posts });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch posts", error });
+  }
 });
 
 router.post("/create", authJWT, async (req, res) => {
